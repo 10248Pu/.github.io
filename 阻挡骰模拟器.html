@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>血碗阻挡骰模拟器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #444;
+        }
+
+        h1 {
+            color: #222;
+            font-size: 2.2rem;
+            margin-bottom: 5px;
+        }
+
+        .game-area {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 900px) {
+            .game-area {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .controls, .results {
+            background-color: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            color: #222;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .dice-count {
+            margin-bottom: 25px;
+        }
+
+        .count-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .count-btn {
+            flex: 1;
+            background-color: #f5f5f5;
+            color: #333;
+            border: 1px solid #ccc;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+
+        .count-btn.active {
+            background-color: #333;
+            color: white;
+            border-color: #333;
+        }
+
+        .roll-btn {
+            width: 100%;
+            background-color: #444;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 25px;
+        }
+
+        .dice-results {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 700px) {
+            .dice-results {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .dice-box {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+            border: 2px solid #ddd;
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .dice-box:hover {
+            background-color: #f0f0f0;
+        }
+
+        .dice-box.active {
+            border-color: #444;
+            background-color: white;
+        }
+
+        .dice-box.selected {
+            border-color: #000;
+            background-color: #e6e6e6;
+            box-shadow: 0 0 0 2px #000;
+        }
+
+        .dice-box.rerolled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .dice-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 15px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .dice-result {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .dice-label {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .dice-rerolled {
+            color: #888;
+            font-size: 0.9rem;
+            font-style: italic;
+            margin-top: 10px;
+        }
+
+        .reroll-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+
+        .reroll-status {
+            margin-bottom: 15px;
+            padding: 12px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            color: #555;
+        }
+
+        .reroll-btn {
+            width: 100%;
+            background-color: #666;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .reroll-btn:disabled {
+            background-color: #ddd;
+            color: #aaa;
+            cursor: not-allowed;
+        }
+
+        .reroll-btn.highlight {
+            background-color: #004080;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { background-color: #004080; }
+            50% { background-color: #0066cc; }
+            100% { background-color: #004080; }
+        }
+
+        .selected-count {
+            margin-top: 10px;
+            color: #666;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .rules-section {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .rules-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 1000px) {
+            .rules-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .rules-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .rule-box {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+
+        .rule-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #222;
+        }
+
+        .rule-desc {
+            color: #444;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #888;
+            padding: 60px 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>血碗阻挡骰模拟器</h1>
+        </header>
+
+        <div class="game-area">
+            <div class="controls">
+                <h2 class="section-title">控制</h2>
+
+                <div class="dice-count">
+                    <h3>骰子数量</h3>
+                    <div class="count-buttons">
+                        <button class="count-btn active" data-count="1">1</button>
+                        <button class="count-btn" data-count="2">2</button>
+                        <button class="count-btn" data-count="3">3</button>
+                    </div>
+                </div>
+
+                <button class="roll-btn" id="rollBtn">
+                    掷骰
+                </button>
+
+                <div class="reroll-section">
+                    <div class="reroll-status" id="rerollStatus">
+                        未掷骰
+                    </div>
+                    <button class="reroll-btn" id="rerollBtn" disabled>
+                        执行重骰 (0)
+                    </button>
+                    <div class="selected-count" id="selectedCount">
+                        点击骰子可多选，整次掷骰只能重骰一次
+                    </div>
+                </div>
+            </div>
+
+            <div class="results">
+                <h2 class="section-title">结果</h2>
+
+                <div class="dice-results" id="diceResults">
+                    <div class="empty-state">
+                        <p>点击"掷骰"按钮开始</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="rules-section">
+            <h2 class="section-title">阻挡骰规则</h2>
+            <div class="rules-grid">
+                <div class="rule-box">
+                    <div class="rule-name">推离</div>
+                    <div class="rule-desc">该球员给了对方球员一记强力猛推，迫使其后退。目标球员被执行阻挡行动的球员推离。执行阻挡行动的球员可以选择跟进，其将移动进入到被推离球员腾出的方格。</div>
+                </div>
+                <div class="rule-box">
+                    <div class="rule-name">双方倒地</div>
+                    <div class="rule-desc">在一次猛烈碰撞后，双方球员都被撞翻在地。执行阻挡行动的球员和目标球员都被对方击倒在原所在格，视为他们都执行了一次阻挡行动。</div>
+                </div>
+                <div class="rule-box">
+                    <div class="rule-name">绊倒</div>
+                    <div class="rule-desc">目标球员尽其所能避开攻击者的重击，如果目标球员拥有闪避，该结果变为推离。否则该结果变为嘭。由于规则描述存在争议，具体裁定请以GW官方FAQ为准。</div>
+                </div>
+                <div class="rule-box">
+                    <div class="rule-name">嘭！</div>
+                    <div class="rule-desc">目标被击飞并重重摔落在地！对目标球员应用推离结果。此外，在应用推离结果后，目标球员立即被执行阻挡行动的球员击倒在其进入的方格。</div>
+                </div>
+                <div class="rule-box">
+                    <div class="rule-name">球员倒地</div>
+                    <div class="rule-desc">执行阻挡行动的球员立即被目标球员击倒，视为目标球员执行了一次阻挡行动。</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const gameState = {
+            diceCount: 1,
+            results: [],
+            rerolledIndexes: [],     // 已重骰的骰子索引
+            selectedIndexes: [],     // 当前选中的骰子索引
+            hasUsedReroll: false     // 本次掷骰是否已使用重骰机会
+        };
+
+        const diceOutcomes = [
+            { 
+                id: 'push', 
+                name: '推离',
+                icon: 'url(data:image/png;base64,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)'
+            },
+            { 
+                id: 'both-down', 
+                name: '双方倒地',
+                icon: 'url(data:image/png;base64,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)'
+            },
+            { 
+                id: 'stumble', 
+                name: '绊倒',
+                icon: 'url(data:image/png;base64,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)'
+            },
+            { 
+                id: 'pow', 
+                name: '嘭！',
+                icon: 'url(data:image/png;base64,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)'
+            },
+            { 
+                id: 'player-down', 
+                name: '球员倒地',
+                icon: 'url(data:image/png;base64,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)'
+            }
+        ];
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // 骰子数量按钮
+            document.querySelectorAll('.count-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    gameState.diceCount = parseInt(this.dataset.count);
+                });
+            });
+
+            document.getElementById('rollBtn').addEventListener('click', rollDice);
+            document.getElementById('rerollBtn').addEventListener('click', performReroll);
+        });
+
+        function rollDice() {
+            // 重置状态
+            gameState.results = [];
+            gameState.rerolledIndexes = [];
+            gameState.selectedIndexes = [];
+            gameState.hasUsedReroll = false;
+
+            // 生成新骰子
+            for (let i = 0; i < gameState.diceCount; i++) {
+                const outcomes = [];
+                diceOutcomes.forEach(outcome => {
+                    const count = outcome.id === 'push' ? 2 : 1;
+                    for (let j = 0; j < count; j++) outcomes.push(outcome);
+                });
+                const randomIndex = Math.floor(Math.random() * outcomes.length);
+                gameState.results.push({
+                    ...outcomes[randomIndex],
+                    index: i,
+                    rerolled: false
+                });
+            }
+
+            updateDisplay();
+            updateRerollStatus();
+        }
+
+        function updateDisplay() {
+            const container = document.getElementById('diceResults');
+            if (gameState.results.length === 0) {
+                container.innerHTML = `<div class="empty-state"><p>点击"掷骰"按钮开始</p></div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+
+            for (let i = 0; i < 3; i++) {
+                const diceBox = document.createElement('div');
+                diceBox.className = 'dice-box';
+
+                if (i < gameState.results.length) {
+                    const result = gameState.results[i];
+                    diceBox.classList.add('active');
+
+                    // 已重骰的骰子
+                    if (result.rerolled) diceBox.classList.add('rerolled');
+
+                    // 选中的骰子（只有未重骰且未使用重骰机会时才可选中）
+                    if (gameState.selectedIndexes.includes(i) && !result.rerolled && !gameState.hasUsedReroll) {
+                        diceBox.classList.add('selected');
+                    }
+
+                    diceBox.innerHTML = `
+                        <div class="dice-icon" style="background-image: ${result.icon};"></div>
+                        <div class="dice-result">${result.name}</div>
+                        <div class="dice-label">骰子 ${i + 1}</div>
+                        ${result.rerolled ? '<div class="dice-rerolled">已重骰</div>' : ''}
+                    `;
+
+                    // 未重骰且未使用重骰机会 → 可点击选中
+                    if (!result.rerolled && !gameState.hasUsedReroll) {
+                        diceBox.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            toggleSelect(i);
+                        });
+                    }
+                } else {
+                    diceBox.innerHTML = `<div style="color: #bbb; margin-top: 10px;">未使用</div>`;
+                }
+
+                container.appendChild(diceBox);
+            }
+        }
+
+        function toggleSelect(index) {
+            const pos = gameState.selectedIndexes.indexOf(index);
+            if (pos === -1) {
+                gameState.selectedIndexes.push(index);
+            } else {
+                gameState.selectedIndexes.splice(pos, 1);
+            }
+            updateDisplay();
+            updateRerollStatus();
+        }
+
+        function updateRerollStatus() {
+            const statusEl = document.getElementById('rerollStatus');
+            const rerollBtn = document.getElementById('rerollBtn');
+            const selectedCount = gameState.selectedIndexes.length;
+
+            rerollBtn.textContent = `执行重骰 (${selectedCount})`;
+
+            if (gameState.results.length === 0) {
+                statusEl.textContent = '未掷骰';
+                rerollBtn.disabled = true;
+                rerollBtn.classList.remove('highlight');
+                document.getElementById('selectedCount').textContent = '点击骰子可多选，整次掷骰只能重骰一次';
+                return;
+            }
+
+            if (gameState.hasUsedReroll) {
+                statusEl.textContent = '已使用重骰机会，本次掷骰不能再重骰';
+                rerollBtn.disabled = true;
+                rerollBtn.classList.remove('highlight');
+                document.getElementById('selectedCount').textContent = '重骰机会已用完';
+                return;
+            }
+
+            if (selectedCount > 0) {
+                statusEl.textContent = `已选中 ${selectedCount} 个骰子，点击执行重骰`;
+                rerollBtn.disabled = false;
+                rerollBtn.classList.add('highlight');
+                document.getElementById('selectedCount').textContent = `选中的骰子将同时重骰（共1次机会）`;
+            } else {
+                statusEl.textContent = '请点击骰子选择要重骰的目标';
+                rerollBtn.disabled = true;
+                rerollBtn.classList.remove('highlight');
+                document.getElementById('selectedCount').textContent = '点击骰子可多选，整次掷骰只能重骰一次';
+            }
+        }
+
+        function performReroll() {
+            if (gameState.hasUsedReroll) return;
+            if (gameState.selectedIndexes.length === 0) return;
+
+            // 标记已使用重骰机会
+            gameState.hasUsedReroll = true;
+
+            // 同时重骰所有选中的骰子
+            gameState.selectedIndexes.forEach(index => {
+                // 标记为已重骰
+                gameState.results[index].rerolled = true;
+                gameState.rerolledIndexes.push(index);
+
+                // 生成新结果
+                const outcomes = [];
+                diceOutcomes.forEach(outcome => {
+                    const count = outcome.id === 'push' ? 2 : 1;
+                    for (let j = 0; j < count; j++) outcomes.push(outcome);
+                });
+                const randomIndex = Math.floor(Math.random() * outcomes.length);
+                const newOutcome = outcomes[randomIndex];
+
+                gameState.results[index] = {
+                    ...newOutcome,
+                    index: index,
+                    rerolled: true
+                };
+            });
+
+            // 清空选中
+            gameState.selectedIndexes = [];
+
+            updateDisplay();
+            updateRerollStatus();
+        }
+    </script>
+</body>
+</html>
